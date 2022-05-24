@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from 'axios';
-import { v4 as uuidv4 } from "uuid";
-import {BrowserRouter as Router, Route} from 'react-router-dom';
+import axios from "axios";
+import { BrowserRouter as Router, Route } from "react-router-dom";
 
 import Tasks from "./components/Tasks";
 import AddTask from "./components/AddTask";
@@ -10,76 +9,75 @@ import Header from "./components/Header";
 import "./App.css";
 
 const App = () => {
-  // let message = 'Hello World!';
-  const [tasks, setTasks] = useState([
-    {
-      id: '1',
-      title: 'Estudar',
-      completed: false
-    },
-    {
-      id: '2',
-      title: 'Arrumar a casa',
-      completed: false
-    },
-  ]);
+  const [tasks, setTasks] = useState([]);
 
- /*  useEffect(() => {
-    const fetchTasks = async () => {
-      const {data} = await axios.get(
-        "https://jsonplaceholder.cypress.io/todos?_limit=10"
-      );
-      
-      setTasks(data);
-    };
-
-    fetchTasks();
-  }, []); */
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/list_tarefas")
+      .then((res) => {
+        setTasks(res.data);
+      })
+      .catch(() => {
+        console.log("deu erro");
+      });
+  }, [tasks]);
 
   const handleTaskClick = (taskId) => {
-    const newTasks = tasks.map((task) => {
-      if(task.id === taskId) return { ...task, completed: !task.completed };
+    tasks.map((task) => {
+      if (task.id === taskId) {
+        const updatedTask = { ...task, completed: !task.completed };
+        axios.patch(
+          `http://localhost:5000/update_tarefa/${taskId}`,
+          updatedTask
+        );
+        return { ...task, completed: !task.completed };
+      }
 
       return task;
     });
-
-    setTasks(newTasks);
   };
 
-  const handleTaskAddition = (taskTitle) => {
-    const newTasks = [
-      ...tasks, 
-      {
-        title: taskTitle,
-        id: uuidv4(),
-        completed: false
-      }
-    ];
-
-    setTasks(newTasks);
+  const handleTaskAddition = (taskTitle, taskDescription) => {
+    const newTask = {
+      title: taskTitle,
+      content: taskDescription,
+      completed: false,
+    };
+    axios
+      .post("http://localhost:5000/create_tarefa", newTask)
+      .then(() => {
+        console.log("Criado!");
+      })
+      .catch(() => {
+        console.log("Deu erro!");
+      });
   };
 
   const handleTaskDeletion = (taskId) => {
-    const newTasks = tasks.filter( task => task.id !== taskId);
-    
-    setTasks(newTasks);
-  }
+    axios.delete(`http://localhost:5000/delete_tarefa/${taskId}`);
+    //const newTasks = tasks.filter((task) => task.id !== taskId);
+    //setTasks(newTasks);
+  };
 
   return (
     <Router>
       <div className="container">
         <Header />
-        <Route path="/" exact render={() => (
+        <Route
+          path="/"
+          exact
+          render={() => (
             <>
               <AddTask handleTaskAddition={handleTaskAddition} />
-              <Tasks 
-                tasks={tasks} 
-                handleTaskClick={handleTaskClick} 
+              <Tasks
+                tasks={tasks}
+                handleTaskClick={handleTaskClick}
                 handleTaskDeletion={handleTaskDeletion}
               />
             </>
-        )} />
-        <Route path="/:taskTitle" component={TaskDetails} />
+          )}
+        />
+        <Route path="/:taskId" component={TaskDetails} />
       </div>
     </Router>
   );
